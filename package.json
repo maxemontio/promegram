@@ -1,0 +1,24 @@
+{
+  "name": "promegram",
+  "version": "0.0.1",
+  "description": "Telegram notificator for Alertmanager",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxemontio/promegram.git"
+  },
+  "author": "maxemontio@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maxemontio/promegram/issues"
+  },
+  "homepage": "https://github.com/maxemontio/promegram#readme",
+  "dependencies": {
+    "axios": "^0.21.0",
+    "express": "^4.17.1",
+    "node-telegram-bot-api": "^0.50.0"
+  }
+}
