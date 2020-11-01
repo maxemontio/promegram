@@ -10,7 +10,10 @@ app.use(bodyParser.json())
 alertmanagerUrl = ''
 token = ''
 chat_id = ''
+silenceTime = 1
+
 const bot = new TelegramBot(token, { polling: true })
+
 allAlerts = []
 
 app.post("/", function (req, res) {
@@ -78,6 +81,15 @@ function parseTime(timeAt) {
   if (munites < 10){
     munites = `0${munites}`
   }
+  if (day < 10){
+    day = `0${day}`
+  }
+  if (month < 10){
+    month = `0${month}`
+  }
+  if (hour < 10){
+    hour = `0${hour}`
+  }
   var date = `${day}-${month + 1}-${year} ${hour}:${munites}`
   
   return date
@@ -85,6 +97,12 @@ function parseTime(timeAt) {
 
 function setSilence(data, createdBy, ids) {
   data = data.split(',')
+
+  var CurrentTimeRaw = new Date();
+  var startsAt = CurrentTimeRaw.toISOString()
+  
+  endsAtRaw = CurrentTimeRaw.setHours(CurrentTimeRaw.getHours() + silenceTime);
+  endsAt = new Date(endsAtRaw).toISOString();  
   
   axios.post(`${alertmanagerUrl}/api/v2/silences`, {
     "matchers": [
@@ -99,8 +117,8 @@ function setSilence(data, createdBy, ids) {
             "value": data[1]
         }
     ],
-  "startsAt": "2020-10-29T11:02:42.668Z",
-  "endsAt": "2020-10-30T02:02:42.668Z",
+  "startsAt": startsAt,
+  "endsAt": endsAt,
   "createdBy": createdBy,
   "comment": "From Telegram bot"
 })
