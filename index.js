@@ -33,7 +33,7 @@ bot.on("callback_query", function (msg) {
     setSilence(msg.data, createdBy, ids)
   } 
   
-  if (msg.data.split(',').length == 3) {
+  if (msg.data.split(',').length == 1 && msg.data != "nothing") {
     silenceDelete(msg.data, createdBy, ids)
   }
 })
@@ -143,17 +143,17 @@ function silenceDelete(data, createdBy, ids) {
   .then(function (response) {
     console.log(`Silence deleted by ${createdBy}, id: ${data[0]}`);
     data.splice(0,1)
-    simpleButton(data, ids)
+    simpleButton(ids)
   })
   .catch(function (error) {
-    console.log(error.response.data);
+    var regexp = /already expired/gi;
+    if (regexp.test(error.response.data)) {
+      simpleButton(ids)
+    } 
   })
 }
 
 function silencedButton(ids, silenceId, data) {
-
-  testData = [silenceId.silenceID, data]
-  testData = testData.toString()
 
   opts = {
     chat_id: ids[0],
@@ -162,20 +162,18 @@ function silencedButton(ids, silenceId, data) {
   changes =     {
     inline_keyboard: [
       [
-        { text: `SilenceID: ${silenceId.silenceID}. Push to expire`, callback_data: testData },
+        { text: `SilenceID: ${silenceId.silenceID}. Push to expire`, callback_data: silenceId.silenceID },
       ],
     ],
   }
   bot.editMessageReplyMarkup(changes, opts)
 }
 
-function simpleButton(data, ids) {
-  data = data.toString()
-
+function simpleButton(ids) {
   changes =     {
     inline_keyboard: [
       [
-        { text: `Set Silence for ${silenceTime}h`, callback_data: data },
+        { text: "Silence deleted", callback_data: "nothing" },
       ],
     ],
   }
@@ -187,4 +185,3 @@ function simpleButton(data, ids) {
 }
 
 setInterval(function(){checkAlerts()}, 10000)
-
