@@ -25,12 +25,15 @@ app.post("/", function (req, res) {
 
 bot.on("callback_query", function (msg) {
   bot.answerCallbackQuery(msg.id)
+
+  createdBy = `${msg.from.first_name} ${msg.from.last_name}`
+  ids = [msg.message.chat.id, msg.message.message_id]
+  
   if (msg.data.split(',').length == 2) {
-    createdBy = `${msg.from.first_name} ${msg.from.last_name}`
-    ids = [msg.message.chat.id, msg.message.message_id]
     setSilence(msg.data, createdBy, ids)
   } 
-  if (msg.data.split(',').length == 1) {
+  
+  if (msg.data.split(',').length == 3) {
     silenceDelete(msg.data, createdBy, ids)
   }
 })
@@ -61,7 +64,7 @@ function sendAlert(alert) {
     reply_markup: JSON.stringify({
       inline_keyboard: [
         [
-          { text: 'Set Silence', callback_data: returnData }
+          { text: `Set Silence for ${silenceTime}h`, callback_data: returnData }
         ],
       ]
     })
@@ -124,7 +127,7 @@ function setSilence(data, createdBy, ids) {
 })
   .then(function (response) {
     if (response.data){
-      silencedButton(ids, response.data)
+      silencedButton(ids, response.data, data)
       console.log(`New silence set by ${createdBy}, id: ${response.data.silenceID}`);
     }
   })
@@ -133,21 +136,25 @@ function setSilence(data, createdBy, ids) {
   });
 }
 
-function silenceDelete(silenceID, createdBy, ids) {
-  axios.delete(`${alertmanagerUrl}/api/v2/silence/${silenceID}`)
+function silenceDelete(data, createdBy, ids) {
+  data = data.split(',')
+
+  axios.delete(`${alertmanagerUrl}/api/v2/silence/${data[0]}`)
   .then(function (response) {
-    console.log(`Silence deleted by ${createdBy}, id: ${silenceID}`);
-    simpleButton(ids)
+    console.log(`Silence deleted by ${createdBy}, id: ${data[0]}`);
+    data.splice(0,1)
+    simpleButton(data, ids)
   })
   .catch(function (error) {
     console.log(error.response.data);
   })
-  .then(function () {
-    // always executed
-  });
 }
 
-function silencedButton(ids, silenceId) {
+function silencedButton(ids, silenceId, data) {
+
+  testData = [silenceId.silenceID, data]
+  testData = testData.toString()
+
   opts = {
     chat_id: ids[0],
     message_id: ids[1],
@@ -155,24 +162,26 @@ function silencedButton(ids, silenceId) {
   changes =     {
     inline_keyboard: [
       [
-        { text: `SilenceID: ${silenceId.silenceID}`, callback_data: `${silenceId.silenceID}` },
+        { text: `SilenceID: ${silenceId.silenceID}. Push to expire`, callback_data: testData },
       ],
     ],
   }
   bot.editMessageReplyMarkup(changes, opts)
 }
 
-function simpleButton(ids) {
-  opts = {
-    chat_id: ids[0],
-    message_id: ids[1],
-  }
+function simpleButton(data, ids) {
+  data = data.toString()
+
   changes =     {
     inline_keyboard: [
       [
-        { text: 'Silence removed', callback_data: 'test,test,test' },
+        { text: `Set Silence for ${silenceTime}h`, callback_data: data },
       ],
     ],
+  }
+  opts = {
+    chat_id: ids[0],
+    message_id: ids[1],
   }
   bot.editMessageReplyMarkup(changes, opts)
 }
