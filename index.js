@@ -4,14 +4,15 @@ const express = require("express")
 const bodyParser = require("body-parser")
 const axios = require("axios")
 const app = express()
+require('dotenv').config();
 
-alertmanagerUrl = ''
-token = ''
-chat_id = ''
+alertmanagerUrl = process.env.ALERTMANAGERURL
+token = process.env.TOKEN
+chat_id = process.env.CHATID
+// https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
 msgDelayMs = 1000 // more than 1000 to group chat, more then 30 to single user chat
 checkIntervalS = 60 // checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving or errors
-// https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
-silenceTime = 1
+silenceTime = process.env.SILENCETIME
 port = 8088
 
 
