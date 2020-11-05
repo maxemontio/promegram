@@ -1,9 +1,7 @@
 # Promegram
-
 Telegram notificator for Alertmanager
 
 ## Need to set
-
 1. Bot token
 2. Chat id
 3. Alertmanager URL
@@ -21,10 +19,10 @@ receivers:
     - send_resolved: true
       url: <url:port>
 ```
-If you have multiple recievers, do not set 'group_by' directive for promegram - bot works faster witout that
+If you have multiple recievers, do not set 'group_by' directive for promegram - bot works faster without that
 
 ## Prometheus rules
-Promegram use summary field, so use it for some kind of tempating.
+Promegram use summary field, so use it for some kind of message templating.
 
 Example: 
 ```yaml
@@ -38,4 +36,27 @@ Example:
       \nHost: {{ $labels.instance }}
       \nMessage: Host is unavailable
       \nMetric value: {{ $value }}"
+```
+## Testing
+Make a POST rquest to promegram to test alerting:
+```json
+{
+   "status":"firing",
+   "alerts":[
+      {
+         "status":"firing",
+         "labels":{
+            "alertname":"testPromegram",
+            "instance":"testPromegram:9100",
+            "job":"testPromegram",
+            "severity":"warning"
+         },
+         "annotations":{
+            "summary":"Job: testPromegram \nHost: testPromegram:9100 \nMessage: Test message \nMetric value: 1"
+         },
+         "startsAt":"1970-01-01T10:00:00.000000000Z",
+         "endsAt":"0001-01-01T00:00:00Z"
+      }
+   ]
+}
 ```

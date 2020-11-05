@@ -1,20 +1,44 @@
+process.env.NTBA_FIX_319 = 1;
 const TelegramBot = require('node-telegram-bot-api')
 const express = require("express")
 const bodyParser = require("body-parser")
 const axios = require("axios")
 const app = express()
 
-app.listen(8088)
-app.use(bodyParser.json())
-
 alertmanagerUrl = ''
 token = ''
 chat_id = ''
+msgDelayMs = 1000 // more than 1000 to group chat, more then 30 to single user chat
+checkIntervalS = 60 // checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving or errors
+// https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
 silenceTime = 1
+port = 8088
+
+
+if (typeof chat_id == 'undefined'){
+  console.log(`Chat id is not set, exiting`)
+  process.exit(1);
+}
+if (typeof token == 'undefined'){
+  console.log(`Bot Token is not set, exiting`)
+  process.exit(1);
+}
+console.log(`Running on port: ${port}`)
+if (typeof alertmanagerUrl !== 'undefined'){
+  console.log(`Alertmanager URL: ${alertmanagerUrl}`)
+} else {
+  console.log(`Alertmanager URL is not set`)
+}
+
+
+app.listen(port)
+app.use(bodyParser.json())
 
 const bot = new TelegramBot(token, { polling: true })
 
+
 allAlerts = []
+silencedMessages = []
 
 app.post("/", function (req, res) {
   res.sendStatus(200)
@@ -33,24 +57,27 @@ bot.on("callback_query", function (msg) {
     setSilence(msg.data, createdBy, ids)
   } 
   
-  if (msg.data.split(',').length == 1 && msg.data != "nothing") {
+  if (msg.data.split(',').length == 1 && msg.data != "nothing" && msg.data != "alrtmNotSet") {
     silenceDelete(msg.data, createdBy, ids)
   }
 })
 
-function checkAlerts() {
+async function checkAlerts() {
   if (allAlerts.length > 0){
     console.log(`Alerts recieved: ${allAlerts.length}`)
-    while (allAlerts.length > 0){
-        allAlerts.forEach(alert => {
-          sendAlert(alert)
-          allAlerts.splice(allAlerts.indexOf(alert), 1)
-      })
+    for (const item of allAlerts) {
+      await sendAlert(item);
     }
+    allAlerts.length = 0
+  }
+  maxSavedSilences = 300
+  if (silencedMessages.length > maxSavedSilences){
+    dif = silencedMessages.length - maxSavedSilences
+    silencedMessages.splice(0, dif);
   }
 }
 
-function sendAlert(alert) {
+async function sendAlert(alert) {
   if (alert.status == "resolved"){
     text = `${alert.status.toUpperCase()}\n${alert.labels.alertname}\n\n${alert.annotations.summary}\n\n${parseTime(alert.endsAt)}`
   } else {
@@ -60,16 +87,24 @@ function sendAlert(alert) {
   returnData = [alert.labels.alertname,alert.labels.instance]
   returnData = returnData.toString()
 
+  if (typeof alertmanagerUrl !== 'undefined'){
+    buttText = `Set Silence for ${silenceTime}h`
+    retData = returnData
+  } else {
+    buttText = 'Alertmanager URL not set'
+    retData = 'alrtmNotSet'
+  }
   options = {
     reply_markup: JSON.stringify({
       inline_keyboard: [
         [
-          { text: `Set Silence for ${silenceTime}h`, callback_data: returnData }
+          { text: buttText, callback_data: retData }
         ],
       ]
     })
   }
   bot.sendMessage(chat_id, text, options)
+  return new Promise(resolve => setTimeout(resolve, msgDelayMs));
 }
 
 function parseTime(timeAt) {
@@ -78,7 +113,7 @@ function parseTime(timeAt) {
   var hour = time.getHours()
   var munites = time.getMinutes()
   var day = time.getDate()
-  var month = time.getMonth()
+  var month = time.getMonth() + 1
   var year = time.getFullYear()
   
   if (munites < 10){
@@ -93,7 +128,7 @@ function parseTime(timeAt) {
   if (hour < 10){
     hour = `0${hour}`
   }
-  var date = `${day}-${month + 1}-${year} ${hour}:${munites}`
+  var date = `${day}-${month}-${year} ${hour}:${munites}`
   
   return date
 }
@@ -127,34 +162,32 @@ function setSilence(data, createdBy, ids) {
 })
   .then(function (response) {
     if (response.data){
-      silencedButton(ids, response.data, data)
+      silencedButton(ids, response.data)
+      silencedMessages.push({"id":response.data.silenceID, "alert": data[0], "host": data[1]})
       console.log(`New silence set by ${createdBy}, id: ${response.data.silenceID}`);
     }
   })
   .catch(function (error) {
-    console.log(error);
+    console.log(error.message);
   });
 }
 
 function silenceDelete(data, createdBy, ids) {
-  data = data.split(',')
-
-  axios.delete(`${alertmanagerUrl}/api/v2/silence/${data[0]}`)
+  axios.delete(`${alertmanagerUrl}/api/v2/silence/${data}`)
   .then(function (response) {
-    console.log(`Silence deleted by ${createdBy}, id: ${data[0]}`);
-    data.splice(0,1)
-    simpleButton(ids)
+    console.log(`Silence deleted by ${createdBy}, id: ${data}`);
+    simpleButton(ids, data)
+
   })
   .catch(function (error) {
     var regexp = /already expired/gi;
     if (regexp.test(error.response.data)) {
-      simpleButton(ids)
+      simpleButton(ids, data)
     } 
   })
 }
 
-function silencedButton(ids, silenceId, data) {
-
+function silencedButton(ids, silenceId) {
   opts = {
     chat_id: ids[0],
     message_id: ids[1],
@@ -169,11 +202,21 @@ function silencedButton(ids, silenceId, data) {
   bot.editMessageReplyMarkup(changes, opts)
 }
 
-function simpleButton(ids) {
+function simpleButton(ids, data) {
+  index = silencedMessages.findIndex(alert => alert.id === data);
+  if (index == -1){
+    text = "Too old message"
+    dataToReturn = "nothing"
+  } else {
+    text = `Set Silence for ${silenceTime}h`
+    dataToReturn = [silencedMessages[index]["alert"], silencedMessages[index]["host"]]
+    dataToReturn = dataToReturn.toString()  
+  }
+
   changes =     {
     inline_keyboard: [
       [
-        { text: "Silence deleted", callback_data: "nothing" },
+        { text: text, callback_data: dataToReturn },
       ],
     ],
   }
@@ -184,4 +227,6 @@ function simpleButton(ids) {
   bot.editMessageReplyMarkup(changes, opts)
 }
 
-setInterval(function(){checkAlerts()}, 10000)
+setInterval(function(){checkAlerts()}, checkIntervalS * 1000)
+
+
