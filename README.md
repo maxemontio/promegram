@@ -37,6 +37,27 @@ Example:
       \nMessage: Host is unavailable
       \nMetric value: {{ $value }}"
 ```
+
+## Try with docker
+```yaml
+version: '3.1'
+
+services:
+  promegram:
+    image: maxemontio/promegram
+    container_name: promegram
+    hostname: promegram
+    restart: always 
+    ports:
+      - 8088:8088
+    environment:
+      - ALERTMANAGERURL=http://<address>:<port>
+      - TOKEN=<bot token>
+      - CHATID=<chat id>
+      - SILENCETIME=1 
+```
+SILENCETIME - for how many hours silence will be set. Minimum value is 1.
+
 ## Testing
 Make a POST rquest to promegram to test alerting:
 ```json
