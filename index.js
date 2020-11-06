@@ -10,8 +10,8 @@ alertmanagerUrl = process.env.ALERTMANAGERURL
 token = process.env.TOKEN
 chat_id = process.env.CHATID
 // https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
-msgDelayMs = 1000 // more than 1000 to group chat, more then 30 to single user chat
-checkIntervalS = 60 // checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving or errors
+msgDelayMs = process.env.MSGDELAYMS // more than 1000 to group chat, more then 30 to single user chat but less than 20 messages per minute
+checkIntervalS = process.env.CHECKINTERVALS // checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving otherwise 429 errors
 silenceTime = process.env.SILENCETIME
 port = 8088
 

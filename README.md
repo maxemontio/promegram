@@ -44,7 +44,7 @@ version: '3.1'
 
 services:
   promegram:
-    image: maxemontio/promegram
+    image: maxemontio/promegram:latest
     container_name: promegram
     hostname: promegram
     restart: always 
@@ -54,7 +54,9 @@ services:
       - ALERTMANAGERURL=http://<address>:<port>
       - TOKEN=<bot token>
       - CHATID=<chat id>
-      - SILENCETIME=1 
+      - SILENCETIME=1
+      - MSGDELAYMS=2000 # more than 1000 to group chat, more then 30 to single user chat but less than 20 messages per minute
+      - CHECKINTERVALS=120 # checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving otherwise 429 errors
 ```
 SILENCETIME - for how many hours silence will be set. Minimum value is 1.
 
