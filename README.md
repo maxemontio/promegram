@@ -3,7 +3,7 @@ Telegram notificator for Alertmanager
 
 ## Need to set
 1. Bot token
-2. Chat id
+2. Chat id (one or more)
 3. Alertmanager URL
 
 ## Features
@@ -52,16 +52,16 @@ services:
       - 8088:8088
     environment:
       - ALERTMANAGERURL=http://<address>:<port>
-      - TOKEN=<bot token>
-      - CHATID=<chat id>
-      - SILENCETIME=1
-      - MSGDELAYMS=2000 # more than 1000 to group chat, more then 30 to single user chat but less than 20 messages per minute
-      - CHECKINTERVALS=120 # checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving otherwise 429 errors
+      - TOKEN=<bot token> # botfather will tell you
+      - USERS=<chat id> # one or more user or group chat ids, but it is better to use ony user chat ids because of https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
+      - SILENCETIME=1 # minimum one hour
+      - MSGDELAYMS=2000 # more than 1000 to GROUP chat and LESS than 20 messages per minute, more then 30 to SINGLE USER chat
+      - CHECKINTERVALS=120 # checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving, otherwise 429 errors
 ```
 SILENCETIME - for how many hours silence will be set. Minimum value is 1.
 
 ## Testing
-Make a POST rquest to promegram to test alerting:
+Make a POST request to promegram to test alerting:
 ```json
 {
    "status":"firing",

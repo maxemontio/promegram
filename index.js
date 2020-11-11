@@ -8,18 +8,14 @@ require('dotenv').config();
 
 alertmanagerUrl = process.env.ALERTMANAGERURL
 token = process.env.TOKEN
-chat_id = process.env.CHATID
 // https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
-msgDelayMs = process.env.MSGDELAYMS // more than 1000 to group chat, more then 30 to single user chat but less than 20 messages per minute
+msgDelayMs = process.env.MSGDELAYMS // more than 1000 to GROUP chat and LESS than 20 messages per minute, more then 30 to SINGLE USER chat
 checkIntervalS = process.env.CHECKINTERVALS // checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving otherwise 429 errors
 silenceTime = process.env.SILENCETIME
+users = process.env.USERS // one or more chat id's
+users = users.split(',')
 port = 8088
 
-
-if (typeof chat_id == 'undefined'){
-  console.log(`Chat id is not set, exiting`)
-  process.exit(1);
-}
 if (typeof token == 'undefined'){
   console.log(`Bot Token is not set, exiting`)
   process.exit(1);
@@ -66,10 +62,12 @@ bot.on("callback_query", function (msg) {
 async function checkAlerts() {
   if (allAlerts.length > 0){
     console.log(`Alerts recieved: ${allAlerts.length}`)
-    for (const item of allAlerts) {
-      await sendAlert(item);
+    for (userId of users){
+      for (const alert of allAlerts) {
+        await sendAlert(alert, userId);
+      }
     }
-    allAlerts.length = 0
+    allAlerts.length = 0;
   }
   maxSavedSilences = 300
   if (silencedMessages.length > maxSavedSilences){
@@ -78,7 +76,8 @@ async function checkAlerts() {
   }
 }
 
-async function sendAlert(alert) {
+
+async function sendAlert(alert, userId) {
   if (alert.status == "resolved"){
     text = `${alert.status.toUpperCase()}\n${alert.labels.alertname}\n\n${alert.annotations.summary}\n\n${parseTime(alert.endsAt)}`
   } else {
@@ -104,7 +103,7 @@ async function sendAlert(alert) {
       ]
     })
   }
-  bot.sendMessage(chat_id, text, options)
+  bot.sendMessage(userId, text, options)
   return new Promise(resolve => setTimeout(resolve, msgDelayMs));
 }
 
@@ -136,6 +135,8 @@ function parseTime(timeAt) {
 
 function setSilence(data, createdBy, ids) {
   data = data.split(',')
+
+  silenceTime = Number(silenceTime)
 
   var CurrentTimeRaw = new Date();
   var startsAt = CurrentTimeRaw.toISOString()
