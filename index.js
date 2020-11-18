@@ -76,7 +76,6 @@ async function checkAlerts() {
   }
 }
 
-
 async function sendAlert(alert, userId) {
   if (alert.status == "resolved"){
     text = `${alert.status.toUpperCase()}\n${alert.labels.alertname}\n\n${alert.annotations.summary}\n\n${parseTime(alert.endsAt)}`
@@ -103,7 +102,15 @@ async function sendAlert(alert, userId) {
       ]
     })
   }
-  bot.sendMessage(userId, text, options)
+
+  if (Buffer.byteLength(returnData) > 64) { // ловим переполнение
+    console.log(`overload: ${returnData} - ${Buffer.byteLength(returnData)} bytes of 64`)
+    bot.sendMessage(userId, text)
+  } else {
+    bot.sendMessage(userId, text, options)
+
+  }
+
   return new Promise(resolve => setTimeout(resolve, msgDelayMs));
 }
 
