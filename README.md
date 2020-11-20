@@ -9,7 +9,7 @@ Telegram notificator for Alertmanager
 ## Features
 1. Sending alerts by one
 2. Button, which allows you to set silence (by instance and alertname values) and expire it then
-3. No need to type /start or something to launch, it will send messages to set chat until it is alive
+3. No need to type /start or something to launch, it will send messages to until it is alive
 
 ## Alertmanager config
 ```yaml
@@ -51,10 +51,10 @@ services:
     ports:
       - 8088:8088
     environment:
-      - ALERTMANAGERURL=http://<address>:<port>
+      - ALERTMANAGERURL=http://<address>:<port> # dont set to disable buttons
       - TOKEN=<bot token> # botfather will tell you
       - USERS=<chat id> # one or more user or group chat ids, but it is better to use ony user chat ids because of https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this
-      - SILENCETIME=1 # minimum one hour
+      - SILENCETIME=1 # minimum one hour, set 0 to disable buttons
       - MSGDELAYMS=2000 # more than 1000 to GROUP chat and LESS than 20 messages per minute, more then 30 to SINGLE USER chat
       - CHECKINTERVALS=120 # checkIntervalS * 1000 < msgDelayMs * max count of alerts you are recieving, otherwise 429 errors
 ```
