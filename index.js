@@ -98,17 +98,17 @@ async function sendAlert(alert, userId) {
   if (alert.status == "resolved") {
     start = Date.parse(alert.startsAt);
     end = Date.parse(alert.endsAt);
-    text = `${alert.status.toUpperCase()}\n${alert.labels.alertname}\n\n${alert.annotations.summary}\n\n${parseTime(alert.startsAt)}\nDuration: ${getDuration(start, end)}`;
+    text = `<b><u>✅✅✅ ${alert.status.toUpperCase()}</u> ✅✅✅\n${alert.labels.alertname}</b>\n\n${alert.annotations.summary}\n\n${parseTime(alert.startsAt)}\nDuration: ${getDuration(start, end)}`;
   } else {
     start = Date.parse(alert.startsAt);
     end = Date.now();
-    text = `${alert.status.toUpperCase()}\n${alert.labels.alertname}\n\n${alert.annotations.summary}\n\n${parseTime(alert.startsAt)}\n${getDuration(start, end)} ago`;
+    text = `<b><u>🔥🔥🔥 ${alert.status.toUpperCase()}</u> 🔥🔥🔥\n${alert.labels.alertname}</b>\n\n${alert.annotations.summary}\n\n${parseTime(alert.startsAt)}\n${getDuration(start, end)} ago`;
   }
 
   returnData = [alert.labels.alertname, alert.labels.instance];
   returnData = returnData.toString();
 
-  if (typeof alertmanagerUrl !== "undefined") {
+  if (typeof alertmanagerUrl != "undefined") {
     buttText = `Set Silence for ${Math.trunc(silenceTime)}h`;
     retData = returnData;
   } else {
@@ -116,8 +116,9 @@ async function sendAlert(alert, userId) {
     retData = "alrtmNotSet";
   }
   options = {
+    parse_mode: "HTML",
     reply_markup: JSON.stringify({
-      inline_keyboard: [[{ text: buttText, callback_data: retData }]],
+      inline_keyboard: [[{ text: buttText, callback_data: retData }]]
     }),
   };
 
